@@ -6,6 +6,7 @@ struct SendView: View {
     @ObservedObject var settings: PhoenixSettings
     @ObservedObject var transport: TransportSelector
     @ObservedObject var engine: SenderEngine
+    @ObservedObject var links: LinkMonitor
 
     init(screen: Binding<Screen>, hub: AppHub) {
         _screen = screen
@@ -13,6 +14,14 @@ struct SendView: View {
         self.settings = hub.settings
         self.transport = hub.transport
         self.engine = hub.sender
+        self.links = hub.links
+    }
+
+    /// The link the stream is actually on: the pinned one, or whatever macOS picked.
+    private var activeLink: Link? {
+        if transport.selectedID != "auto" { return links.link(named: transport.selectedID) }
+        if let a = links.activeInterface, let l = links.link(named: a) { return l }
+        return links.links.first
     }
 
     var body: some View {
@@ -77,16 +86,54 @@ struct SendView: View {
                         }
                     }
                     section("Connection") {
-                        ForEach(transport.options) { opt in
-                            Button {
-                                transport.selectedID = opt.id
-                            } label: {
-                                BigChoice(symbol: symbol(for: opt),
-                                          title: opt.title, detail: opt.subtitle,
-                                          selected: transport.selectedID == opt.id)
+                        Button { transport.selectedID = "auto" } label: {
+                            BigChoice(symbol: "wand.and.stars",
+                                      title: "Automatic",
+                                      detail: activeLink.map { "Using \($0.title) — \($0.speedText)" }
+                                              ?? "Let macOS pick the best route",
+                                      selected: transport.selectedID == "auto")
+                        }.buttonStyle(.plain)
+
+                        ForEach(links.links) { l in
+                            Button { transport.selectedID = l.id } label: {
+                                HStack(spacing: 16) {
+                                    Image(systemName: l.kind.symbol)
+                                        .font(.system(size: 22))
+                                        .frame(width: 44, height: 44)
+                                        .foregroundStyle(transport.selectedID == l.id
+                                                         ? AnyShapeStyle(Color.accentColor)
+                                                         : AnyShapeStyle(.secondary))
+                                    VStack(alignment: .leading, spacing: 3) {
+                                        HStack(spacing: 6) {
+                                            Text(l.title).font(.system(size: 16, weight: .semibold))
+                                            if activeLink?.id == l.id {
+                                                Text("IN USE")
+                                                    .font(.system(size: 9, weight: .bold))
+                                                    .padding(.horizontal, 5).padding(.vertical, 2)
+                                                    .background(Color.green.opacity(0.22),
+                                                                in: Capsule())
+                                                    .foregroundStyle(.green)
+                                            }
+                                        }
+                                        Text(l.detail).font(.system(size: 12))
+                                            .foregroundStyle(.secondary)
+                                    }
+                                    Spacer(minLength: 8)
+                                    if transport.selectedID == l.id {
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .font(.system(size: 18))
+                                            .foregroundStyle(Color.accentColor)
+                                    }
+                                }
+                                .contentShape(Rectangle())
+                                .phoenixCard(selected: transport.selectedID == l.id)
                             }.buttonStyle(.plain)
                         }
-                        Text("Pick a cable or Wi-Fi to pin the stream to it. Automatic follows whatever route macOS prefers.")
+
+                        if let tb = links.thunderboltSummary {
+                            Banner(kind: .info, text: "Thunderbolt: \(tb). Turn on Thunderbolt Bridge in Network settings on both Macs to use it for the stream.")
+                        }
+                        Text("Speeds are read live from each interface. Automatic follows whatever route macOS prefers; pick one to pin the stream to it.")
                             .font(.system(size: 11)).foregroundStyle(.secondary)
                     }
                     section("Resolution") {
@@ -106,14 +153,19 @@ struct SendView: View {
                     }
                     section("Quality") {
                         ForEach(Quality.all) { q in
+                            let head = q.headroom(onLinkOf: activeLink?.bitsPerSecond ?? 0)
                             Button {
                                 settings.qualityID = q.id
                                 engine.applySettings()
                             } label: {
                                 BigChoice(symbol: "speedometer", title: q.title,
-                                          detail: q.detail, selected: settings.qualityID == q.id)
-                            }.buttonStyle(.plain)
+                                          detail: "\(q.detail) · \(head.text)",
+                                          selected: settings.qualityID == q.id)
+                            }
+                            .buttonStyle(.plain)
+                            .opacity(head == .tooMuch ? 0.55 : 1)
                         }
+                        Text(qualityNote).font(.system(size: 11)).foregroundStyle(.secondary)
                     }
                 }
                 .padding(24)
@@ -127,6 +179,18 @@ struct SendView: View {
     private var resolvedLabel: String {
         let (w, h) = settings.resolvedSize(codec: engine.activeCodec)
         return "\(w) × \(h)"
+    }
+
+    /// Says plainly whether the current pick will hold up on this link.
+    private var qualityNote: String {
+        let (w, h) = settings.resolvedSize(codec: engine.activeCodec)
+        let q = settings.quality
+        guard let link = activeLink, link.bitsPerSecond > 0 else {
+            return "\(w) × \(h) at \(q.fps) fps needs about \(q.bitrate / 1_000_000) Mbps. This link's speed is unknown."
+        }
+        let head = q.headroom(onLinkOf: link.bitsPerSecond)
+        return "\(w) × \(h) at \(q.fps) fps needs about \(q.bitrate / 1_000_000) Mbps, peaking near "
+             + "\(Int(q.peakBitsPerSecond / 1_000_000)) Mbps. \(link.title) gives \(link.speedText) — \(head.text)."
     }
 
     private var codecNote: String {

@@ -10,6 +10,7 @@ final class AppHub: ObservableObject {
 
     let settings = PhoenixSettings()
     let transport = TransportSelector()
+    let links = LinkMonitor()
     lazy var sender: SenderEngine = SenderEngine(settings: settings, transport: transport)
 
     @Published var screen: Screen = .home

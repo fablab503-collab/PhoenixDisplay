@@ -81,6 +81,44 @@ have comfortable sizing than maximum sharpness, pick 1440p and let the receiving
   decision first: `tccutil reset ScreenCapture danielscreatesparis.Phoenix-Display`.
 - **Not shippable on the Mac App Store** with extend mode. See below.
 
+## Live connection status
+
+The Connection panel reads every interface live and shows what it actually is and how fast it
+actually runs — the rate comes from `ifi_baudrate` on each interface, not from a guess:
+
+```
+Automatic          Using Ethernet (en7) - 2 Gb/s
+Ethernet (en7)     IN USE   192.168.1.19 - 2 Gb/s
+Wi-Fi (en0)                 192.168.1.43 - 239 Mb/s
+Thunderbolt: 246x at 40 Gb/s
+```
+
+Thunderbolt is recognised separately: the app asks the system whether a device is attached and
+at what rate, which is what distinguishes Thunderbolt 3 (20 Gb/s) from 4 (40 Gb/s). A Thunderbolt
+cable only carries the stream once Thunderbolt Bridge exists as a network service on both Macs,
+and the app says so rather than pretending the cable is in use.
+
+Automatic follows whatever route macOS prefers, and the badge shows which one that is. Pick a
+specific interface to pin the stream to it.
+
+## Will the link carry it
+
+Each quality option is checked against the live link speed, using the peak rather than the
+average — the encoder is allowed 1.8x for keyframes, and a link that cannot absorb the peak
+stutters even when the average fits.
+
+```
+Sharp     30 fps - 80 Mbps  - plenty of headroom
+Balanced  45 fps - 100 Mbps - plenty of headroom
+Smooth    60 fps - 120 Mbps - plenty of headroom
+
+5120 x 2880 at 60 fps needs about 120 Mbps, peaking near 216 Mbps.
+Ethernet (en7) gives 2 Gb/s - plenty of headroom.
+```
+
+Anything the link cannot carry is dimmed and labelled, instead of being offered and then
+stuttering.
+
 ## Running with no window
 
 The app lives in the menu bar. Closing the window does not quit it — the stream keeps running.

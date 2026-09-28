@@ -76,9 +76,40 @@ struct Quality: Identifiable, Hashable {
     let bitrate: Int
     var detail: String { "\(fps) fps · \(bitrate / 1_000_000) Mbps" }
 
+    /// Peak demand, not the average: the encoder is allowed 1.8x for keyframes,
+    /// and a link that cannot absorb the peak stutters even if the average fits.
+    var peakBitsPerSecond: UInt64 { UInt64(Double(bitrate) * 1.8) }
+
+    enum Headroom { case plenty, comfortable, tight, tooMuch, unknown }
+
+    /// Can a given link actually carry this? nil link speed means unknown.
+    func headroom(onLinkOf bitsPerSecond: UInt64) -> Headroom {
+        guard bitsPerSecond > 0 else { return .unknown }
+        let ratio = Double(peakBitsPerSecond) / Double(bitsPerSecond)
+        if ratio <= 0.25 { return .plenty }
+        if ratio <= 0.50 { return .comfortable }
+        if ratio <= 0.85 { return .tight }
+        return .tooMuch
+    }
+}
+
+extension Quality.Headroom {
+    var text: String {
+        switch self {
+        case .plenty:      return "plenty of headroom"
+        case .comfortable: return "comfortable"
+        case .tight:       return "tight — expect the odd stutter"
+        case .tooMuch:     return "more than this link can carry"
+        case .unknown:     return "link speed unknown"
+        }
+    }
+    var isProblem: Bool { self == .tight || self == .tooMuch }
+}
+
+extension Quality {
+    // Sized for 5120x2880 desktop content. Even the highest is well under a
+    // gigabit link, so there is no reason to starve text.
     static let all: [Quality] = [
-        // Sized for 5120x2880 desktop content over gigabit. Even the highest is
-        // under 15% of a gigabit link, so there is no reason to starve text.
         Quality(id: "sharp",    title: "Sharp",    fps: 30, bitrate: 80_000_000),
         Quality(id: "balanced", title: "Balanced", fps: 45, bitrate: 100_000_000),
         Quality(id: "smooth",   title: "Smooth",   fps: 60, bitrate: 120_000_000),
