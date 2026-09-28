@@ -1,0 +1,20 @@
+# Build output
+build/
+*.app/
+*.dmg
+*.zip
+
+# Signing and notarization material — never commit these
+*.p12
+*.cer
+*.certSigningRequest
+*.mobileprovision
+*.provisionprofile
+AuthKey_*.p8
+notarize*.json
+
+# macOS / editor noise
+.DS_Store
+._*
+.swiftpm/
+*.xcuserdatad/

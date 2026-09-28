@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleName</key><string>Phoenix Display</string>
+  <key>CFBundleDisplayName</key><string>Phoenix Display</string>
+  <key>CFBundleIdentifier</key><string>danielscreatesparis.Phoenix-Display</string>
+  <key>CFBundleExecutable</key><string>Phoenix Display</string>
+  <key>CFBundlePackageType</key><string>APPL</string>
+  <key>CFBundleShortVersionString</key><string>2.0</string>
+  <key>CFBundleVersion</key><string>20</string>
+  <key>CFBundleIconFile</key><string>AppIcon</string>
+  <key>LSMinimumSystemVersion</key><string>13.0</string>
+  <key>NSHighResolutionCapable</key><true/>
+  <key>NSPrincipalClass</key><string>NSApplication</string>
+  <key>ITSAppUsesNonExemptEncryption</key><false/>
+  <key>NSScreenCaptureUsageDescription</key>
+  <string>Phoenix Display needs to record this screen so it can send the picture to your other Mac.</string>
+  <key>NSLocalNetworkUsageDescription</key>
+  <string>Phoenix Display finds and connects to your other Mac on your local network or Thunderbolt cable.</string>
+  <key>NSBonjourServices</key>
+  <array><string>_phoenixdisplay._tcp</string></array>
+</dict>
+</plist>
