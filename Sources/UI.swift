@@ -100,16 +100,14 @@ struct Banner: View {
 enum Screen { case home, send, receive }
 
 struct RootView: View {
-    @StateObject private var settings  = PhoenixSettings()
-    @StateObject private var transport = TransportSelector()
-    @State private var screen: Screen = .home
+    @EnvironmentObject var hub: AppHub
 
     var body: some View {
         Group {
-            switch screen {
-            case .home:    HomeView(screen: $screen)
-            case .send:    SendView(screen: $screen, settings: settings, transport: transport)
-            case .receive: ReceiveView(screen: $screen, transport: transport)
+            switch hub.screen {
+            case .home:    HomeView(screen: $hub.screen)
+            case .send:    SendView(screen: $hub.screen, hub: hub)
+            case .receive: ReceiveView(screen: $hub.screen, transport: hub.transport)
             }
         }
         .frame(minWidth: 720, minHeight: 540)

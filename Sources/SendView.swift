@@ -2,15 +2,17 @@ import SwiftUI
 
 struct SendView: View {
     @Binding var screen: Screen
+    @ObservedObject var hub: AppHub
     @ObservedObject var settings: PhoenixSettings
     @ObservedObject var transport: TransportSelector
-    @StateObject private var engine: SenderEngine
+    @ObservedObject var engine: SenderEngine
 
-    init(screen: Binding<Screen>, settings: PhoenixSettings, transport: TransportSelector) {
+    init(screen: Binding<Screen>, hub: AppHub) {
         _screen = screen
-        self.settings = settings
-        self.transport = transport
-        _engine = StateObject(wrappedValue: SenderEngine(settings: settings, transport: transport))
+        self.hub = hub
+        self.settings = hub.settings
+        self.transport = hub.transport
+        self.engine = hub.sender
     }
 
     var body: some View {
@@ -119,8 +121,7 @@ struct SendView: View {
                 .frame(maxWidth: .infinity)
             }
         }
-        .onAppear { engine.startAdvertising() }
-        .onDisappear { engine.stop() }
+        .onAppear { hub.startSending() }
     }
 
     private var resolvedLabel: String {
@@ -151,7 +152,11 @@ struct SendView: View {
             Spacer()
             Text("Sending this screen").font(.system(size: 13, weight: .semibold))
             Spacer()
-            Text(" ").frame(width: 50)
+            Button { hub.hideWindows() } label: {
+                Label("Hide", systemImage: "arrow.down.right.and.arrow.up.left")
+            }
+            .buttonStyle(.plain)
+            .help("Close the window and keep streaming from the menu bar")
         }
         .padding(.horizontal, 16).padding(.vertical, 12)
     }

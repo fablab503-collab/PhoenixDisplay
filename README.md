@@ -81,6 +81,34 @@ have comfortable sizing than maximum sharpness, pick 1440p and let the receiving
   decision first: `tccutil reset ScreenCapture danielscreatesparis.Phoenix-Display`.
 - **Not shippable on the Mac App Store** with extend mode. See below.
 
+## Running with no window
+
+The app lives in the menu bar. Closing the window does not quit it — the stream keeps running.
+
+- **Hide window (keep streaming)** — ⇧⌘H, or the Hide button on the sending screen.
+- **Start with no window** — tick it in the menu bar item and the app launches straight into
+  the menu bar and starts advertising, with nothing on screen at all.
+- The menu bar icon shows the state, and carries Start/Stop, Show window and Quit.
+
+## Testing
+
+`Tools/compat.swift` probes any Mac and reports exactly what it can do as a sender and a
+receiver — encode and decode limits per codec and size, whether extend mode is available, and a
+verdict. Every answer is measured, none is assumed.
+
+```sh
+swiftc -O -o phoenix-compat Tools/compat.swift && ./phoenix-compat
+```
+
+`Tools/testsuite.sh` runs 19 cases for real against a second Mac over ssh: codec limits at both
+ends, a 5K keyframe encoded on one machine and decoded on the other, virtual-display sizing and
+arrangement, all three codec-negotiation paths including an old receiver that announces nothing,
+live streaming in both modes, and Gatekeeper on both builds.
+
+```sh
+PHOENIX_IMAC=user@host PHOENIX_KEY=~/.ssh/id_ed25519 ./Tools/testsuite.sh
+```
+
 ## Build
 
 ```sh
