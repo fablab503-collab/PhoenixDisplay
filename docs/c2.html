@@ -1,0 +1,90 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+:root{--bg:#0d0f18;--card:#171a26;--card2:#1d2130;--line:#282d3f;
+--fg:#e8eaf2;--dim:#8b90a5;--acc:#6c7cff;--good:#3fce7a;--warn:#e2a33f;--bad:#e2574c;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--fg);
+font:15px/1.5 -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;
+-webkit-font-smoothing:antialiased}
+.card{width:1200px;padding:52px 56px;background:
+radial-gradient(1100px 500px at 15% -10%,#252a45 0%,transparent 60%),var(--bg);}
+h1{font-size:34px;font-weight:700;letter-spacing:-.6px}
+h2{font-size:12px;font-weight:700;letter-spacing:1.4px;color:var(--dim);margin:30px 0 12px}
+.sub{color:var(--dim);font-size:15px;margin-top:6px}
+.head{display:flex;align-items:center;gap:18px}
+.logo{width:56px;height:56px;border-radius:14px;flex:0 0 auto;
+background:linear-gradient(135deg,#2a3475 0%,#4d2f7a 55%,#9e385c 100%);
+position:relative;box-shadow:0 6px 20px rgba(0,0,0,.45)}
+.logo:before,.logo:after{content:"";position:absolute;border-radius:3px}
+.logo:before{width:22px;height:14px;left:9px;top:17px;background:rgba(255,255,255,.34);
+border:1.5px solid rgba(255,255,255,.6)}
+.logo:after{width:22px;height:14px;left:25px;top:25px;background:#f6f7ff}
+.pill{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.6px;
+padding:4px 10px;border-radius:99px}
+.ok{background:rgba(63,206,122,.14);color:var(--good)}
+.no{background:rgba(226,87,76,.14);color:var(--bad)}
+.mid{background:rgba(226,163,63,.14);color:var(--warn)}
+.acc{background:rgba(108,124,255,.16);color:#9aa6ff}
+.grid{display:grid;gap:10px}
+.row{display:grid;grid-template-columns:1fr auto;align-items:center;gap:16px;
+background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 18px}
+.row .n{font-weight:600}
+.row .d{color:var(--dim);font-size:13px;margin-top:2px}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+table{width:100%;border-collapse:separate;border-spacing:0 8px}
+th{font-size:11px;letter-spacing:1.2px;color:var(--dim);text-align:left;padding:0 16px 4px;font-weight:700}
+td{background:var(--card);padding:14px 16px;border-top:1px solid var(--line);
+border-bottom:1px solid var(--line);font-size:14px}
+td:first-child{border-left:1px solid var(--line);border-radius:12px 0 0 12px;font-weight:600}
+td:last-child{border-right:1px solid var(--line);border-radius:0 12px 12px 0}
+.mine td{background:linear-gradient(90deg,rgba(108,124,255,.16),rgba(108,124,255,.05));
+border-color:rgba(108,124,255,.4)}
+.big{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:4px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+.stat .v{font-size:30px;font-weight:700;letter-spacing:-.5px}
+.stat .k{font-size:12px;color:var(--dim);margin-top:3px}
+.foot{margin-top:30px;color:var(--dim);font-size:12px;display:flex;
+justify-content:space-between;border-top:1px solid var(--line);padding-top:16px}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;color:#b9c0dd}
+.note{background:var(--card2);border:1px solid var(--line);border-left:3px solid var(--acc);
+border-radius:8px;padding:12px 16px;color:var(--dim);font-size:13px;margin-top:14px}
+</style></head><body><div class="card" id="c2">
+  <div class="head"><div class="logo"></div>
+    <div><h1>How it compares</h1>
+      <div class="sub">Using a second Mac as a display — the honest picture</div></div>
+    <div style="margin-left:auto"><span class="pill acc">OPEN SOURCE · MIT</span></div>
+  </div>
+
+  <h2>MAC-TO-MAC SECOND SCREEN</h2>
+  <table>
+    <tr><th>Option</th><th>Works on a 2017 iMac</th><th>Cost</th><th>Extra hardware</th><th>Source</th></tr>
+    <tr class="mine"><td>Phoenix Display</td><td><span class="pill ok">yes</span></td>
+      <td>free</td><td>none</td><td>open, MIT</td></tr>
+    <tr><td>AirPlay to Mac<br><span style="font-weight:400;color:var(--dim);font-size:12px">built into macOS</span></td>
+      <td><span class="pill no">no — needs iMac 2019+</span></td><td>free</td><td>none</td><td>closed</td></tr>
+    <tr><td>Sidecar</td><td><span class="pill no">no — iPad only</span></td>
+      <td>free</td><td>an iPad</td><td>closed</td></tr>
+    <tr><td>Luna Display</td><td><span class="pill ok">yes</span></td>
+      <td>paid</td><td>USB-C dongle</td><td>closed</td></tr>
+    <tr><td>Duet Display</td><td><span class="pill ok">yes</span></td>
+      <td>subscription</td><td>none</td><td>closed</td></tr>
+  </table>
+
+  <div class="note">The row that matters here: <b>AirPlay to Mac requires an iMac from 2019 or
+  later.</b> A 2017 iMac cannot be an AirPlay receiver at all — which is exactly why this exists.
+  Model support for the others is from their published requirements, not measured here.</div>
+
+  <h2>WHAT THIS ONE DOES THAT IS UNUSUAL</h2>
+  <div class="grid">
+    <div class="row"><div><div class="n">Real 5120 × 2880, not upscaled</div>
+      <div class="d">H.264 hardware encoding stops at 4096×2304. HEVC does not — so it uses HEVC, and says so.</div></div><span class="pill ok">HEVC</span></div>
+    <div class="row"><div><div class="n">Tells you if the link can carry it</div>
+      <div class="d">Live link speed per interface, judged on peak not average. Options your cable cannot carry are dimmed.</div></div><span class="pill ok">LIVE</span></div>
+    <div class="row"><div><div class="n">Wi-Fi, Ethernet or Thunderbolt — recognised and pinnable</div>
+      <div class="d">Thunderbolt 3 and 4 told apart by negotiated rate. Automatic shows which route it actually chose.</div></div><span class="pill ok">AUTO</span></div>
+    <div class="row"><div><div class="n">Runs with no window at all</div>
+      <div class="d">Lives in the menu bar. Start with nothing on screen and it advertises immediately.</div></div><span class="pill ok">0 WINDOWS</span></div>
+  </div>
+
+  <div class="foot"><span>github.com/fablab503-collab/PhoenixDisplay</span>
+    <span>No telemetry · no account · no network calls beyond your own LAN</span></div>
+</div></body></html>

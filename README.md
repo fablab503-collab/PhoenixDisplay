@@ -5,6 +5,15 @@ Mirror it, or extend onto it as a genuinely separate desktop.
 
 Streams a real **5120 × 2880** desktop with HEVC. Universal binary, macOS 13 and later.
 
+![Test results](docs/c1.png)
+
+![How it compares](docs/c2.png)
+
+![Open source and the limits](docs/c3.png)
+
+> The cards are generated from `docs/cards.html` with `Tools/shot.swift`, so they can be
+> regenerated whenever the numbers change rather than drifting out of date.
+
 ---
 
 ## Why HEVC, and why that matters

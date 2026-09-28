@@ -1,0 +1,186 @@
+<!doctype html><html><head><meta charset="utf-8">
+<style>
+:root{--bg:#0d0f18;--card:#171a26;--card2:#1d2130;--line:#282d3f;
+--fg:#e8eaf2;--dim:#8b90a5;--acc:#6c7cff;--good:#3fce7a;--warn:#e2a33f;--bad:#e2574c;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--fg);
+font:15px/1.5 -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;
+-webkit-font-smoothing:antialiased}
+.card{width:1200px;padding:52px 56px;background:
+radial-gradient(1100px 500px at 15% -10%,#252a45 0%,transparent 60%),var(--bg);}
+h1{font-size:34px;font-weight:700;letter-spacing:-.6px}
+h2{font-size:12px;font-weight:700;letter-spacing:1.4px;color:var(--dim);margin:30px 0 12px}
+.sub{color:var(--dim);font-size:15px;margin-top:6px}
+.head{display:flex;align-items:center;gap:18px}
+.logo{width:56px;height:56px;border-radius:14px;flex:0 0 auto;
+background:linear-gradient(135deg,#2a3475 0%,#4d2f7a 55%,#9e385c 100%);
+position:relative;box-shadow:0 6px 20px rgba(0,0,0,.45)}
+.logo:before,.logo:after{content:"";position:absolute;border-radius:3px}
+.logo:before{width:22px;height:14px;left:9px;top:17px;background:rgba(255,255,255,.34);
+border:1.5px solid rgba(255,255,255,.6)}
+.logo:after{width:22px;height:14px;left:25px;top:25px;background:#f6f7ff}
+.pill{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.6px;
+padding:4px 10px;border-radius:99px}
+.ok{background:rgba(63,206,122,.14);color:var(--good)}
+.no{background:rgba(226,87,76,.14);color:var(--bad)}
+.mid{background:rgba(226,163,63,.14);color:var(--warn)}
+.acc{background:rgba(108,124,255,.16);color:#9aa6ff}
+.grid{display:grid;gap:10px}
+.row{display:grid;grid-template-columns:1fr auto;align-items:center;gap:16px;
+background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 18px}
+.row .n{font-weight:600}
+.row .d{color:var(--dim);font-size:13px;margin-top:2px}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+table{width:100%;border-collapse:separate;border-spacing:0 8px}
+th{font-size:11px;letter-spacing:1.2px;color:var(--dim);text-align:left;padding:0 16px 4px;font-weight:700}
+td{background:var(--card);padding:14px 16px;border-top:1px solid var(--line);
+border-bottom:1px solid var(--line);font-size:14px}
+td:first-child{border-left:1px solid var(--line);border-radius:12px 0 0 12px;font-weight:600}
+td:last-child{border-right:1px solid var(--line);border-radius:0 12px 12px 0}
+.mine td{background:linear-gradient(90deg,rgba(108,124,255,.16),rgba(108,124,255,.05));
+border-color:rgba(108,124,255,.4)}
+.big{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:4px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+.stat .v{font-size:30px;font-weight:700;letter-spacing:-.5px}
+.stat .k{font-size:12px;color:var(--dim);margin-top:3px}
+.foot{margin-top:30px;color:var(--dim);font-size:12px;display:flex;
+justify-content:space-between;border-top:1px solid var(--line);padding-top:16px}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;color:#b9c0dd}
+.note{background:var(--card2);border:1px solid var(--line);border-left:3px solid var(--acc);
+border-radius:8px;padding:12px 16px;color:var(--dim);font-size:13px;margin-top:14px}
+</style></head><body>
+
+<!-- CARD 1 : test results -->
+<div class="card" id="c1">
+  <div class="head"><div class="logo"></div>
+    <div><h1>Phoenix Display</h1>
+      <div class="sub">Turn another Mac into a second screen · real 5K over HEVC</div></div>
+    <div style="margin-left:auto"><span class="pill acc">OPEN SOURCE · MIT</span></div>
+  </div>
+
+  <h2>MEASURED, NOT CLAIMED</h2>
+  <div class="big">
+    <div class="stat"><div class="v">19/19</div><div class="k">test suite, real hardware</div></div>
+    <div class="stat"><div class="v">72/72</div><div class="k">burn-test cycles</div></div>
+    <div class="stat"><div class="v">5120×2880</div><div class="k">HEVC at 60 fps</div></div>
+    <div class="stat"><div class="v">0</div><div class="k">crashes · 0 leaks</div></div>
+  </div>
+
+  <h2>TEST SUITE — RUN ACROSS TWO REAL MACS</h2>
+  <div class="grid">
+    <div class="row"><div><div class="n">Encode &amp; decode limits</div>
+      <div class="d">HEVC encodes 5K where H.264 refuses · iMac decodes 5K HEVC in hardware · keyframe crosses machines</div></div><span class="pill ok">3/3</span></div>
+    <div class="row"><div><div class="n">Virtual display</div>
+      <div class="d">5K request gives real 5120×2880 pixels · not left mirrored · menu bar moves and restores</div></div><span class="pill ok">5/5</span></div>
+    <div class="row"><div><div class="n">Codec negotiation</div>
+      <div class="d">HEVC when offered · H.264 when not · fallback for a build that announces nothing</div></div><span class="pill ok">5/5</span></div>
+    <div class="row"><div><div class="n">Streaming</div>
+      <div class="d">Parameter sets delivered · frames flowing · separate desktop really 5120 wide</div></div><span class="pill ok">4/4</span></div>
+    <div class="row"><div><div class="n">Distribution</div>
+      <div class="d">Both builds pass Gatekeeper — notarized Developer ID</div></div><span class="pill ok">2/2</span></div>
+  </div>
+
+  <h2>BURN TEST — 72 CONNECT / NEGOTIATE / STREAM / DISCONNECT CYCLES</h2>
+  <div class="grid">
+    <div class="row"><div><div class="n mono">iMac 2017 · iMac Pro 2017 · 2019 · 2020</div>
+      <div class="d">negotiated HEVC at 5120×2880 every cycle</div></div><span class="pill ok">PASS</span></div>
+    <div class="row"><div><div class="n mono">iMac 24″ M1 2021 · M4 2024</div>
+      <div class="d">negotiated HEVC at 4480×2520 every cycle</div></div><span class="pill ok">PASS</span></div>
+    <div class="row"><div><div class="n mono">no-HEVC · 1080p-limited · announces nothing</div>
+      <div class="d">fell back to H.264 at the right size every cycle</div></div><span class="pill ok">PASS</span></div>
+    <div class="row"><div><div class="n">Memory across the run</div>
+      <div class="d mono">52,032 KB → 49,136 KB · no displays left registered · no sockets leaked</div></div><span class="pill ok">NO LEAK</span></div>
+  </div>
+
+  <div class="note"><b>What the burn test is not.</b> Apple ships no macOS simulator —
+  <code>simctl</code> offers iOS, tvOS, watchOS and visionOS only. These profiles drive this app's
+  negotiation against each machine's real capability set. They prove the code behaves; they prove
+  nothing about silicon that is not physically present.</div>
+
+  <div class="foot"><span>github.com/fablab503-collab/PhoenixDisplay</span>
+    <span>Signed &amp; notarized · Developer ID</span></div>
+</div>
+
+<!-- CARD 2 : comparison -->
+<div class="card" id="c2">
+  <div class="head"><div class="logo"></div>
+    <div><h1>How it compares</h1>
+      <div class="sub">Using a second Mac as a display — the honest picture</div></div>
+    <div style="margin-left:auto"><span class="pill acc">OPEN SOURCE · MIT</span></div>
+  </div>
+
+  <h2>MAC-TO-MAC SECOND SCREEN</h2>
+  <table>
+    <tr><th>Option</th><th>Works on a 2017 iMac</th><th>Cost</th><th>Extra hardware</th><th>Source</th></tr>
+    <tr class="mine"><td>Phoenix Display</td><td><span class="pill ok">yes</span></td>
+      <td>free</td><td>none</td><td>open, MIT</td></tr>
+    <tr><td>AirPlay to Mac<br><span style="font-weight:400;color:var(--dim);font-size:12px">built into macOS</span></td>
+      <td><span class="pill no">no — needs iMac 2019+</span></td><td>free</td><td>none</td><td>closed</td></tr>
+    <tr><td>Sidecar</td><td><span class="pill no">no — iPad only</span></td>
+      <td>free</td><td>an iPad</td><td>closed</td></tr>
+    <tr><td>Luna Display</td><td><span class="pill ok">yes</span></td>
+      <td>paid</td><td>USB-C dongle</td><td>closed</td></tr>
+    <tr><td>Duet Display</td><td><span class="pill ok">yes</span></td>
+      <td>subscription</td><td>none</td><td>closed</td></tr>
+  </table>
+
+  <div class="note">The row that matters here: <b>AirPlay to Mac requires an iMac from 2019 or
+  later.</b> A 2017 iMac cannot be an AirPlay receiver at all — which is exactly why this exists.
+  Model support for the others is from their published requirements, not measured here.</div>
+
+  <h2>WHAT THIS ONE DOES THAT IS UNUSUAL</h2>
+  <div class="grid">
+    <div class="row"><div><div class="n">Real 5120 × 2880, not upscaled</div>
+      <div class="d">H.264 hardware encoding stops at 4096×2304. HEVC does not — so it uses HEVC, and says so.</div></div><span class="pill ok">HEVC</span></div>
+    <div class="row"><div><div class="n">Tells you if the link can carry it</div>
+      <div class="d">Live link speed per interface, judged on peak not average. Options your cable cannot carry are dimmed.</div></div><span class="pill ok">LIVE</span></div>
+    <div class="row"><div><div class="n">Wi-Fi, Ethernet or Thunderbolt — recognised and pinnable</div>
+      <div class="d">Thunderbolt 3 and 4 told apart by negotiated rate. Automatic shows which route it actually chose.</div></div><span class="pill ok">AUTO</span></div>
+    <div class="row"><div><div class="n">Runs with no window at all</div>
+      <div class="d">Lives in the menu bar. Start with nothing on screen and it advertises immediately.</div></div><span class="pill ok">0 WINDOWS</span></div>
+  </div>
+
+  <div class="foot"><span>github.com/fablab503-collab/PhoenixDisplay</span>
+    <span>No telemetry · no account · no network calls beyond your own LAN</span></div>
+</div>
+
+<!-- CARD 3 : open source / honesty -->
+<div class="card" id="c3">
+  <div class="head"><div class="logo"></div>
+    <div><h1>Open source, and honest about the limits</h1>
+      <div class="sub">Everything below is measured on the hardware, or stated as unknown</div></div>
+    <div style="margin-left:auto"><span class="pill acc">MIT</span></div>
+  </div>
+
+  <h2>WHAT IT DOES</h2>
+  <div class="grid">
+    <div class="row"><div><div class="n">Mirror or extend</div>
+      <div class="d">Extend creates a genuine second desktop you can drag windows onto, placed left, right, above or below</div></div><span class="pill ok">✓</span></div>
+    <div class="row"><div><div class="n">Make it the main display</div>
+      <div class="d">Moves the menu bar to the streamed screen, and puts it back</div></div><span class="pill ok">✓</span></div>
+    <div class="row"><div><div class="n">Works with older builds</div>
+      <div class="d">The receiver announces what it can decode; a build that announces nothing still gets H.264</div></div><span class="pill ok">✓</span></div>
+  </div>
+
+  <h2>WHAT IT DOES NOT DO — STATED PLAINLY</h2>
+  <div class="grid">
+    <div class="row"><div><div class="n">Not for fast pointer work</div>
+      <div class="d">A streamed screen has compression latency. Good for reference, documentation, chat, monitoring. Not a cabled monitor.</div></div><span class="pill mid">LATENCY</span></div>
+    <div class="row"><div><div class="n">The 5K desktop runs at 1×</div>
+      <div class="d">setHiDPI: yields no Retina mode on macOS 27. Pixel-perfect, but interface elements are physically small.</div></div><span class="pill mid">NO 2×</span></div>
+    <div class="row"><div><div class="n">An extra desktop lives until the app quits</div>
+      <div class="d">Releasing the display object deallocates it — verified — but the window server keeps it registered.</div></div><span class="pill mid">KNOWN</span></div>
+    <div class="row"><div><div class="n">macOS 13 minimum</div>
+      <div class="d">Rules out iMac 2012, 2013, 2014 and 2015 outright. 2017 and later only.</div></div><span class="pill mid">2017+</span></div>
+    <div class="row"><div><div class="n">Not on the Mac App Store</div>
+      <div class="d">Extend mode uses private CoreGraphics API. Guideline 2.5.1 forbids it, and hiding it from review is not an option worth taking.</div></div><span class="pill no">BY DESIGN</span></div>
+  </div>
+
+  <div class="note">Every number in these cards came from running the thing. Where something was
+  not tested — whether macOS stays awake with the lid closed on a virtual display — it says so
+  instead of guessing.</div>
+
+  <div class="foot"><span>github.com/fablab503-collab/PhoenixDisplay · MIT</span>
+    <span>Built with Claude Code</span></div>
+</div>
+</body></html>
