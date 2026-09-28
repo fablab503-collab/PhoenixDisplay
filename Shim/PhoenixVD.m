@@ -205,8 +205,14 @@ static BOOL PhoenixUnmirror(CGDirectDisplayID newDisplay, PhoenixVDPosition pos)
             _failureReason = @"CGVirtualDisplayMode has no initWithWidth:height:refreshRate:.";
             return self;
         }
+        // The MODE is in POINTS; maxPixelsWide/High are in PIXELS. With HiDPI a
+        // point is two pixels, so asking for a 5120x2880 mode AND HiDPI implies a
+        // 10240x5760 backing, which exceeds maxPixels — CGVirtualDisplay then
+        // silently discards the mode and hands back a default 1920x1080 desktop.
+        uint32_t modeW = hiDPI ? width / 2 : width;
+        uint32_t modeH = hiDPI ? height / 2 : height;
         CFTypeRef modeRaw = ((CFTypeRef (*)(CFTypeRef, SEL, uint32_t, uint32_t, double))objc_msgSend)
-                               (modeAllocRaw, modeSel, width, height, refreshRate);
+                               (modeAllocRaw, modeSel, modeW, modeH, refreshRate);
         id mode = CFBridgingRelease(modeRaw);
         if (!mode) { _failureReason = @"Could not build the display mode."; return self; }
 
