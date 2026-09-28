@@ -4,8 +4,8 @@
 P="$(cd "$(dirname "$0")/.." && pwd)"
 B="$P/build"
 APP="/Applications/Phoenix Display.app"
-IMAC="${PHOENIX_IMAC:-madac.kergrohen@192.168.1.130}"
-KEY="${PHOENIX_KEY:-$HOME/.ssh/id_ed25519_synology_codex}"
+IMAC="${PHOENIX_IMAC:?set PHOENIX_IMAC to user@host of the second Mac}"
+KEY="${PHOENIX_KEY:-$HOME/.ssh/id_ed25519}"
 SSH="ssh -o BatchMode=yes -o ConnectTimeout=10 -i $KEY $IMAC"
 
 pass=0; fail=0; n=0

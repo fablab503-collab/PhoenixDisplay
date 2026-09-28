@@ -122,7 +122,7 @@ struct ReceiveView: View {
                         Text("CONNECT BY ADDRESS")
                             .font(.system(size: 11, weight: .semibold)).foregroundStyle(.secondary)
                         HStack {
-                            TextField("192.168.1.19", text: $manualHost)
+                            TextField("192.168.0.10", text: $manualHost)
                                 .textFieldStyle(.roundedBorder)
                             Button("Connect") {
                                 guard !manualHost.isEmpty else { return }
