@@ -41,13 +41,13 @@ echo
 echo "VIRTUAL DISPLAY"
 pkill -f "MacOS/Phoenix Display" 2>/dev/null; sleep 3   # only one holder at a time
 r=$("$B/sizetest" 5120 2880 1 2>&1); sleep 1
-check "$(echo "$r" | grep -qc 'got 5120x2880' && echo 1)" "extend: a 5K request gives a 5120x2880 desktop" "$r"
+check "$(echo "$r" | grep -qc '5120x2880 PIXELS' && echo 1)" "extend: a 5K request gives 5120x2880 real pixels" "$r"
 check "$(echo "$r" | grep -qc 'mirrored=0' && echo 1)" "extend: not left in a mirror set" "$r"
 r=$("$B/maintest" 2>&1); sleep 1
 check "$(echo "$r" | grep -qc 'makeMainDisplay -> 1' && echo 1)" "main display: menu bar moves to the streamed screen" "$r"
 check "$(echo "$r" | grep -qc 'restoreBuiltInAsMain -> 1' && echo 1)" "main display: restores to the built-in" "$r"
 r=$("$B/sizetest" 1920 1080 1 2>&1); sleep 1
-check "$(echo "$r" | grep -qc 'got 1920x1080' && echo 1)" "extend: a 1080p request gives 1920x1080" "$r"
+check "$(echo "$r" | grep -qc '1920x1080 PIXELS' && echo 1)" "extend: a 1080p request gives 1920x1080 real pixels" "$r"
 
 echo
 echo "CODEC NEGOTIATION"

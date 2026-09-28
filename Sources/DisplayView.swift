@@ -152,6 +152,14 @@ final class VideoLayerView: NSView {
     }
 
     func flush() { displayLayer.flush() }
+
+    /// Drops the current format description so the next parameter sets are
+    /// adopted cleanly after a codec or resolution change.
+    func resetFormat() {
+        formatDescription = nil
+        lastError = nil
+        displayLayer.flush()
+    }
 }
 
 struct VideoView: NSViewRepresentable {
@@ -180,7 +188,14 @@ final class VideoPipe: ObservableObject {
         switch type {
         case .hello:
             if let h = try? JSONDecoder().decode(Hello.self, from: payload) {
-                negotiatedCodec = VideoCodec(rawValue: h.codec ?? "h264") ?? .h264
+                let incoming = VideoCodec(rawValue: h.codec ?? "h264") ?? .h264
+                if incoming != negotiatedCodec {
+                    // The sender switched codec mid-stream. The existing format
+                    // description belongs to the old one and would decode the
+                    // new frames into nothing.
+                    view?.resetFormat()
+                }
+                negotiatedCodec = incoming
                 senderInfo = "\(h.name) · \(h.width)×\(h.height) · \(negotiatedCodec.displayName)"
             }
         case .format:

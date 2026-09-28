@@ -170,6 +170,12 @@ final class SenderEngine: ObservableObject {
 
     private var settings: PhoenixSettings
     private var transport: TransportSelector
+    /// What the connected receiver told us it can decode. Held for the life of
+    /// the connection: a mid-stream settings change must NOT re-negotiate from
+    /// nothing, or the codec silently drops to H.264 and the resolution with it.
+    private var peerCaps: Capabilities?
+    /// Guards against overlapping restarts when settings are changed quickly.
+    private var restartToken = 0
 
     init(settings: PhoenixSettings, transport: TransportSelector) {
         self.settings = settings
@@ -202,7 +208,15 @@ final class SenderEngine: ObservableObject {
         net.onConnect  = { [weak self] caps in
             Task { @MainActor in await self?.beginStreaming(peer: caps) }
         }
-        net.onDisconnect = { [weak self] in Task { @MainActor in self?.endStreaming() } }
+        net.onDisconnect = { [weak self] in
+            Task { @MainActor in
+                guard let self else { return }
+                // Only forget the peer once nothing is connected. A replaced
+                // connection must not clear the live one's negotiation.
+                if !self.net.isConnected { self.peerCaps = nil }
+                self.endStreaming()
+            }
+        }
     }
 
     func startAdvertising() {
@@ -236,11 +250,19 @@ final class SenderEngine: ObservableObject {
     }
 
     /// Re-applies mode/resolution without tearing the connection down.
+    /// Reuses the capabilities already negotiated, and collapses a burst of
+    /// changes into a single restart.
     func applySettings() {
-        guard streaming else { return }
+        guard streaming || net.isConnected else { return }
+        restartToken &+= 1
+        let token = restartToken
         Task { @MainActor in
             endStreamingKeepingConnection()
-            await beginStreaming()
+            // Let the encoder and capture session actually tear down, and give
+            // a rapid second change the chance to supersede this one.
+            try? await Task.sleep(nanoseconds: 250_000_000)
+            guard token == self.restartToken else { return }
+            await self.beginStreaming(peer: self.peerCaps)
         }
     }
 
@@ -248,15 +270,20 @@ final class SenderEngine: ObservableObject {
         problem = nil
         extendFellBack = false
 
+        // Remember what the peer said, so a later settings change does not have
+        // to re-negotiate from nothing.
+        if let peer { peerCaps = peer }
+        let effective = peer ?? peerCaps
+
         // Pick the codec: HEVC only when BOTH ends can do it. An older receiver
         // sends no capabilities at all, so it lands on H.264 automatically.
-        let peerCodecs = peer?.decodes ?? [.h264]
+        let peerCodecs = effective?.decodes ?? [.h264]
         let codec: VideoCodec = (peerCodecs.contains(.hevc) && EncodeCapability.supportsHEVC) ? .hevc : .h264
         activeCodec = codec
-        peerSummary = peer.map { "\($0.appVersion) · \($0.codecs.joined(separator: "/")) · up to \($0.maxWidth)×\($0.maxHeight)" }
+        peerSummary = effective.map { "\($0.appVersion) · \($0.codecs.joined(separator: "/")) · up to \($0.maxWidth)×\($0.maxHeight)" }
             ?? "older receiver — H.264 only"
 
-        let peerMax = peer.map { ($0.maxWidth, $0.maxHeight) }
+        let peerMax = effective.map { ($0.maxWidth, $0.maxHeight) }
         let (w, h) = settings.resolvedSize(codec: codec, peerMax: peerMax)
         let q = settings.quality
 

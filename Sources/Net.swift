@@ -62,6 +62,11 @@ final class NetSender: ObservableObject {
     var onDisconnect: (() -> Void)?
     private var capsParser = PacketParser()
     private var capsDelivered = false
+    /// Each accepted connection gets a number. Late events from a connection
+    /// that has already been replaced must not touch the current one's state —
+    /// a stale .cancelled arriving after the new link is up was wiping the
+    /// negotiated capabilities, which silently dropped the codec to H.264.
+    private var generation = 0
 
     private var listener: NWListener?
     private var connection: NWConnection?
@@ -105,9 +110,11 @@ final class NetSender: ObservableObject {
         // One display at a time: a second attach replaces the first.
         connection?.cancel()
         connection = conn
+        generation &+= 1
+        let mine = generation
         conn.stateUpdateHandler = { [weak self] st in
             Task { @MainActor in
-                guard let self else { return }
+                guard let self, mine == self.generation else { return }
                 switch st {
                 case .ready:
                     let who = conn.endpoint.debugDescription
