@@ -43,6 +43,38 @@ static BOOL SetSize(id obj, NSArray<NSString *> *names, CGSize value) {
 }
 
 
+/// applySettings: only publishes the mode list — the display still comes up on
+/// whatever macOS picks by default (1920x1080 in practice). Select the largest
+/// mode whose backing store matches what was asked for.
+static BOOL PhoenixSelectMode(CGDirectDisplayID display, uint32_t wantPxW, uint32_t wantPxH) {
+    CFArrayRef modes = CGDisplayCopyAllDisplayModes(display, NULL);
+    if (!modes) return NO;
+    CGDisplayModeRef best = NULL, bestRetina = NULL;
+    size_t bestPixels = 0, bestRetinaPixels = 0;
+    for (CFIndex i = 0; i < CFArrayGetCount(modes); i++) {
+        CGDisplayModeRef m = (CGDisplayModeRef)CFArrayGetValueAtIndex(modes, i);
+        size_t pw = CGDisplayModeGetPixelWidth(m), ph = CGDisplayModeGetPixelHeight(m);
+        if (pw > wantPxW || ph > wantPxH) continue;          // never exceed the request
+        size_t px = pw * ph;
+        if (px > bestPixels) { bestPixels = px; best = m; }
+        // A Retina mode draws at a point size smaller than its pixel size.
+        if (CGDisplayModeGetWidth(m) < pw && px > bestRetinaPixels) {
+            bestRetinaPixels = px; bestRetina = m;
+        }
+    }
+    if (bestRetina) best = bestRetina;   // prefer Retina at the same pixel count
+    BOOL ok = NO;
+    if (best) {
+        CGDisplayConfigRef config = NULL;
+        if (CGBeginDisplayConfiguration(&config) == kCGErrorSuccess && config) {
+            CGConfigureDisplayWithDisplayMode(config, display, best, NULL);
+            ok = CGCompleteDisplayConfiguration(config, kCGConfigureForSession) == kCGErrorSuccess;
+        }
+    }
+    CFRelease(modes);
+    return ok;
+}
+
 /// macOS drops a freshly created virtual display into a mirror set with the
 /// built-in panel, which is exactly why "extend" behaved like "mirror".
 /// Break the mirror set and park the new display to the right of the main one.
@@ -170,9 +202,13 @@ static BOOL PhoenixUnmirror(CGDirectDisplayID newDisplay, PhoenixVDPosition pos)
         SetUInt(desc, @[@"setMaxPixelsWide:"], width);
         // The rename that crashed 1.4. New name first, old name as fallback.
         SetUInt(desc, @[@"setMaxPixelsHigh:", @"setMaxPixelsTall:"], height);
-        // Physical size drives the default scaling; ~109 ppi keeps text sane.
-        double mmW = (double)width / 109.0 * 25.4;
-        double mmH = (double)height / 109.0 * 25.4;
+        // Physical size is what macOS uses to decide the default scale. At 109 ppi
+        // a 5120 px panel claims to be 47 inches wide, so macOS drops to 1x and
+        // picks a low mode. A real 27-inch 5K is 218 ppi (596 x 336 mm), which is
+        // what makes it come up as 2560x1440 points backed by 5120x2880 pixels.
+        double ppi = hiDPI ? 218.0 : 109.0;
+        double mmW = (double)width / ppi * 25.4;
+        double mmH = (double)height / ppi * 25.4;
         SetSize(desc, @[@"setSizeInMillimeters:"], CGSizeMake(mmW, mmH));
         SetUInt(desc, @[@"setVendorID:"], 0x3456);
         SetUInt(desc, @[@"setProductID:"], 0x1234);
@@ -209,17 +245,29 @@ static BOOL PhoenixUnmirror(CGDirectDisplayID newDisplay, PhoenixVDPosition pos)
         // point is two pixels, so asking for a 5120x2880 mode AND HiDPI implies a
         // 10240x5760 backing, which exceeds maxPixels — CGVirtualDisplay then
         // silently discards the mode and hands back a default 1920x1080 desktop.
-        uint32_t modeW = hiDPI ? width / 2 : width;
-        uint32_t modeH = hiDPI ? height / 2 : height;
         CFTypeRef modeRaw = ((CFTypeRef (*)(CFTypeRef, SEL, uint32_t, uint32_t, double))objc_msgSend)
-                               (modeAllocRaw, modeSel, modeW, modeH, refreshRate);
+                               (modeAllocRaw, modeSel, width, height, refreshRate);
         id mode = CFBridgingRelease(modeRaw);
         if (!mode) { _failureReason = @"Could not build the display mode."; return self; }
+
+        // Offer the half-size mode too. With HiDPI on, that is the one macOS can
+        // back with the full pixel count, giving a Retina desktop rather than a
+        // native-resolution one where everything is half its proper size.
+        NSMutableArray *modeList = [NSMutableArray arrayWithObject:mode];
+        if (hiDPI && width >= 2 && height >= 2) {
+            CFTypeRef halfAllocRaw = ((CFTypeRef (*)(Class, SEL))objc_msgSend)
+                                        (modeClass, NSSelectorFromString(@"alloc"));
+            if (halfAllocRaw) {
+                id half = CFBridgingRelease(((CFTypeRef (*)(CFTypeRef, SEL, uint32_t, uint32_t, double))objc_msgSend)
+                             (halfAllocRaw, modeSel, width / 2, height / 2, refreshRate));
+                if (half) [modeList insertObject:half atIndex:0];
+            }
+        }
 
         Class setClass = NSClassFromString(@"CGVirtualDisplaySettings");
         id settings = [[setClass alloc] init];
         if (!settings) { _failureReason = @"Could not create display settings."; return self; }
-        SetObject(settings, @[@"setModes:"], @[mode]);
+        SetObject(settings, @[@"setModes:"], modeList);
         SetUInt(settings, @[@"setHiDPI:"], hiDPI ? 1 : 0);
 
         SEL applySel = NSSelectorFromString(@"applySettings:");
@@ -241,6 +289,9 @@ static BOOL PhoenixUnmirror(CGDirectDisplayID newDisplay, PhoenixVDPosition pos)
         // it out of the mirror set macOS just put it in.
         if (_displayID != 0) {
             CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.35, false);
+            // Pick the mode we actually asked for before anything else.
+            PhoenixSelectMode(_displayID, width, height);
+            CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.25, false);
             if (!PhoenixUnmirror(_displayID, position)) {
                 // Not fatal: the stream still works, it just mirrors.
                 _mirroredAnyway = YES;

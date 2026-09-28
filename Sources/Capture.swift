@@ -8,28 +8,49 @@ import CoreVideo
 /// Reports permission failures as text instead of dying silently.
 final class ScreenCapturer: NSObject, SCStreamOutput, SCStreamDelegate, @unchecked Sendable {
     private var stream: SCStream?
+    private(set) var capturedDisplayID: CGDirectDisplayID = 0
     private let queue = DispatchQueue(label: "phoenix.capture")
 
     var onFrame: ((CMSampleBuffer) -> Void)?
     var onError: ((String) -> Void)?
 
     /// Starts capture. `displayID` 0 means the main display.
+    /// Creating a virtual display leaves the display configuration in flux for
+    /// a moment; ScreenCaptureKit asked too early returns an empty content list
+    /// and the stream dies with "Failed to find any displays or windows to
+    /// capture". So the content list is re-read until the display shows up.
     func start(displayID: CGDirectDisplayID, width: Int, height: Int, fps: Int) async {
         stop()
-        do {
-            let content = try await SCShareableContent.excludingDesktopWindows(false,
-                                                                              onScreenWindowsOnly: false)
-            let target: SCDisplay?
-            if displayID == 0 {
-                target = content.displays.first
-            } else {
-                target = content.displays.first { $0.displayID == displayID }
+        var lastProblem = "no displays were offered for capture"
+        for attempt in 0..<12 {
+            do {
+                let content = try await SCShareableContent.excludingDesktopWindows(
+                    false, onScreenWindowsOnly: false)
+                if content.displays.isEmpty {
+                    lastProblem = "ScreenCaptureKit offered no displays at all"
+                } else {
+                    let target: SCDisplay? = displayID == 0
+                        ? content.displays.first
+                        : content.displays.first { $0.displayID == displayID }
+                    if let display = target {
+                        await begin(display: display, width: width, height: height, fps: fps)
+                        return
+                    }
+                    let offered = content.displays.map { String($0.displayID) }.joined(separator: ", ")
+                    lastProblem = "display \(displayID) is not capturable yet (ScreenCaptureKit offers: \(offered))"
+                }
+            } catch {
+                lastProblem = Self.explain(error)
+                // A permission failure will never fix itself by retrying.
+                if lastProblem.contains("Screen Recording") { onError?(lastProblem); return }
             }
-            guard let display = target else {
-                onError?("Display \(displayID) is not available for capture.")
-                return
-            }
+            try? await Task.sleep(nanoseconds: UInt64(120_000_000 + attempt * 60_000_000))
+        }
+        onError?(lastProblem)
+    }
 
+    private func begin(display: SCDisplay, width: Int, height: Int, fps: Int) async {
+        do {
             let filter = SCContentFilter(display: display, excludingWindows: [])
             let cfg = SCStreamConfiguration()
             cfg.width  = width
@@ -44,6 +65,7 @@ final class ScreenCapturer: NSObject, SCStreamOutput, SCStreamDelegate, @uncheck
             try s.addStreamOutput(self, type: .screen, sampleHandlerQueue: queue)
             try await s.startCapture()
             stream = s
+            capturedDisplayID = display.displayID
         } catch {
             onError?(Self.explain(error))
         }
@@ -120,10 +142,21 @@ final class VideoEncoder: @unchecked Sendable {
         VTSessionSetProperty(session, key: kVTCompressionPropertyKey_AverageBitRate, value: bitrate as CFNumber)
         VTSessionSetProperty(session, key: kVTCompressionPropertyKey_ExpectedFrameRate, value: fps as CFNumber)
         VTSessionSetProperty(session, key: kVTCompressionPropertyKey_MaxKeyFrameInterval, value: (fps * 8) as CFNumber)
+        // Tag colour explicitly. HEVC range/matrix defaults differ between an
+        // Apple silicon encoder and an older Intel decoder, and the result is a
+        // washed-out desktop that looks like a gamma bug.
+        VTSessionSetProperty(session, key: kVTCompressionPropertyKey_ColorPrimaries,
+                             value: kCVImageBufferColorPrimaries_ITU_R_709_2)
+        VTSessionSetProperty(session, key: kVTCompressionPropertyKey_TransferFunction,
+                             value: kCVImageBufferTransferFunction_ITU_R_709_2)
+        VTSessionSetProperty(session, key: kVTCompressionPropertyKey_YCbCrMatrix,
+                             value: kCVImageBufferYCbCrMatrix_ITU_R_709_2)
         // Cap bursts so a keyframe can't blow the link out and stall the stream.
-        let window = 1.0
+        // 1.8x the average over one second: enough headroom for a keyframe
+        // without letting a burst swamp the link.
         VTSessionSetProperty(session, key: kVTCompressionPropertyKey_DataRateLimits,
-                             value: [NSNumber(value: bitrate / 8), NSNumber(value: window)] as CFArray)
+                             value: [NSNumber(value: Int(Double(bitrate) * 1.8 / 8.0)),
+                                     NSNumber(value: 1.0)] as CFArray)
         VTSessionSetProperty(session, key: kVTCompressionPropertyKey_PrioritizeEncodingSpeedOverQuality,
                              value: kCFBooleanTrue)
         VTCompressionSessionPrepareToEncodeFrames(session)

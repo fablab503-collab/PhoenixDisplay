@@ -45,6 +45,25 @@ assumes, via `VTIsHardwareDecodeSupported` and a real session.
   Thunderbolt Bridge). Plus connect-by-address when Bonjour is blocked.
 - Discovery over Bonjour `_phoenixdisplay._tcp`, framed TCP on port 51777.
 
+## Getting a real 5K desktop out of CGVirtualDisplay
+
+Three things each silently cost the resolution, and each one looked like a different bug:
+
+1. **`setSizeInMillimeters:` decides the scale.** At 109 ppi a 5120 px panel claims to be 47
+   inches wide, so macOS drops to 1x and picks a low mode. A real 27-inch 5K is 218 ppi.
+2. **`applySettings:` only publishes the mode list.** The display still comes up on whatever
+   macOS picks by default — 1920x1080 in practice. The mode has to be selected explicitly with
+   `CGConfigureDisplayWithDisplayMode`.
+3. **`CGDisplayPixelsWide` returns points, not pixels.** Capturing by it quietly halves the
+   picture on any HiDPI display. Use `CGDisplayModeGetPixelWidth`.
+
+Result: a genuine 5120 x 2880 desktop, streamed at 5120 x 2880.
+
+**One thing that does not work:** `setHiDPI:` produces no Retina mode on macOS 27 — every mode
+comes back with its point size equal to its backing store. So the 5K desktop runs at **1x**:
+pixel-perfect on the 5K panel, but interface elements are physically small. If you would rather
+have comfortable sizing than maximum sharpness, pick 1440p and let the receiving Mac scale it.
+
 ## Honest limits
 
 - **Latency.** Capture, encode, send, decode and display all cost time. It is good for reference

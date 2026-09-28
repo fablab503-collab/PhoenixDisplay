@@ -118,7 +118,7 @@ final class NetSender: ObservableObject {
                     self.readCaps(from: conn)
                     // Don't wait forever: an older receiver sends nothing at all.
                     Task { @MainActor in
-                        try? await Task.sleep(nanoseconds: 1_200_000_000)
+                        try? await Task.sleep(nanoseconds: 3_000_000_000)
                         self.deliverCaps(nil)
                     }
                 case .failed(let e):
@@ -244,8 +244,15 @@ final class NetReceiver: ObservableObject, @unchecked Sendable {
                     // Tell the sender what this Mac can decode, so it can pick
                     // HEVC and give us a real 5K picture when both ends allow.
                     if let caps = try? JSONEncoder().encode(DecodeCapability.local()) {
-                        c.send(content: Packet.encode(.caps, caps),
-                               completion: .contentProcessed { _ in })
+                        let packet = Packet.encode(.caps, caps)
+                        c.send(content: packet, completion: .contentProcessed { _ in })
+                        // Send it again shortly after: if the sender was still
+                        // wiring up its read loop, the first one can be missed,
+                        // and the cost of a duplicate is nothing.
+                        Task { @MainActor in
+                            try? await Task.sleep(nanoseconds: 250_000_000)
+                            c.send(content: packet, completion: .contentProcessed { _ in })
+                        }
                     }
                     self.receive(on: c)
                 case .failed(let e):

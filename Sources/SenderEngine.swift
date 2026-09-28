@@ -77,9 +77,11 @@ struct Quality: Identifiable, Hashable {
     var detail: String { "\(fps) fps · \(bitrate / 1_000_000) Mbps" }
 
     static let all: [Quality] = [
+        // Sized for 5120x2880 desktop content over gigabit. Even the highest is
+        // under 15% of a gigabit link, so there is no reason to starve text.
         Quality(id: "sharp",    title: "Sharp",    fps: 30, bitrate: 80_000_000),
-        Quality(id: "balanced", title: "Balanced", fps: 45, bitrate: 60_000_000),
-        Quality(id: "smooth",   title: "Smooth",   fps: 60, bitrate: 45_000_000),
+        Quality(id: "balanced", title: "Balanced", fps: 45, bitrate: 100_000_000),
+        Quality(id: "smooth",   title: "Smooth",   fps: 60, bitrate: 120_000_000),
     ]
 }
 
@@ -116,9 +118,17 @@ final class PhoenixSettings: ObservableObject {
     func resolvedSize(codec: VideoCodec = .hevc, peerMax: (Int, Int)? = nil) -> (Int, Int) {
         var w = preset.width, h = preset.height
         if w == 0 || h == 0 {
+            // CGDisplayPixelsWide returns the mode's POINT size, not pixels. On a
+            // HiDPI panel that is half the real resolution, so capturing by it
+            // would quietly halve the picture.
             let main = CGMainDisplayID()
-            w = Int(CGDisplayPixelsWide(main))
-            h = Int(CGDisplayPixelsHigh(main))
+            if let mode = CGDisplayCopyDisplayMode(main) {
+                w = mode.pixelWidth
+                h = mode.pixelHeight
+            } else {
+                w = Int(CGDisplayPixelsWide(main))
+                h = Int(CGDisplayPixelsHigh(main))
+            }
         }
         let encMax = EncodeCapability.maxSize(for: codec)
         var capW = encMax.width, capH = encMax.height
@@ -272,6 +282,9 @@ final class SenderEngine: ObservableObject {
                 _ = vd.setPosition(settings.position.raw)
                 if settings.makeMain { _ = vd.makeMainDisplay() }
                 captureID = vd.displayID
+                // The window server needs a beat after a display config change
+                // before ScreenCaptureKit will list the new display.
+                try? await Task.sleep(nanoseconds: 600_000_000)
                 status = vd.mirroredAnyway
                     ? "Streaming (macOS kept the new desktop mirrored)"
                     : "Streaming a separate desktop"
