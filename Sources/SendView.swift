@@ -133,8 +133,13 @@ struct SendView: View {
                         if let tb = links.thunderboltSummary {
                             Banner(kind: .info, text: "Thunderbolt: \(tb). Turn on Thunderbolt Bridge in Network settings on both Macs to use it for the stream.")
                         }
-                        Text("Speeds are read live from each interface. Automatic follows whatever route macOS prefers; pick one to pin the stream to it.")
-                            .font(.system(size: 11)).foregroundStyle(.secondary)
+                        HStack {
+                            Text("Speeds are read live from each interface.")
+                                .font(.system(size: 11)).foregroundStyle(.secondary)
+                            Spacer()
+                            Button("Full connection status…") { hub.openConnection() }
+                                .font(.system(size: 11))
+                        }
                     }
                     section("Resolution") {
                         ForEach(Preset.all) { p in
@@ -216,6 +221,11 @@ struct SendView: View {
             Spacer()
             Text("Sending this screen").font(.system(size: 13, weight: .semibold))
             Spacer()
+            Button { hub.openConnection() } label: {
+                Label("Connection", systemImage: "antenna.radiowaves.left.and.right")
+            }
+            .buttonStyle(.plain)
+            .help("Live connection status")
             Button { hub.hideWindows() } label: {
                 Label("Hide", systemImage: "arrow.down.right.and.arrow.up.left")
             }

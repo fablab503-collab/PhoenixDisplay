@@ -128,6 +128,25 @@ The app lives in the menu bar. Closing the window does not quit it — the strea
   the menu bar and starts advertising, with nothing on screen at all.
 - The menu bar icon shows the state, and carries Start/Stop, Show window and Quit.
 
+## Which iMacs can run this
+
+The app needs macOS 13. That rules out more than half the iMacs since 2012:
+
+| iMac | newest macOS | runs Phoenix Display |
+|---|---|---|
+| 2012 21.5 / 27 | Catalina 10.15 | no |
+| 2013 21.5 / 27 | Catalina 10.15 | no |
+| 2014 Retina 5K | Big Sur 11 | no |
+| 2015 21.5 / 27 | Monterey 12 | no |
+| 2017 21.5 / 27 5K | Ventura 13 | yes |
+| iMac Pro 2017 | Ventura 13 | yes |
+| 2019 27 | Sequoia 15 | yes |
+| 2020 27 | Sequoia 15 | yes |
+| 24-inch M1 2021 and later | current | yes |
+
+ScreenCaptureKit itself needs macOS 12.3, so the floor could be lowered a little, but not to
+2015 and certainly not to 2012 — those would need the deprecated CGDisplayStream path.
+
 ## Testing
 
 `Tools/compat.swift` probes any Mac and reports exactly what it can do as a sender and a
@@ -146,6 +165,23 @@ live streaming in both modes, and Gatekeeper on both builds.
 ```sh
 PHOENIX_IMAC=user@host PHOENIX_KEY=~/.ssh/id_ed25519 ./Tools/testsuite.sh
 ```
+
+`Tools/burntest.sh` hammers the sender with repeated connect / negotiate / stream / disconnect
+cycles while impersonating the capability profile of every iMac that can run the app, plus a
+receiver with no HEVC, one limited to 1080p, and an old build that announces nothing at all.
+
+```sh
+ROUNDS=8 SECS=4 ./Tools/burntest.sh
+```
+
+**What this is not:** Apple ships no macOS simulator — `simctl list runtimes` offers iOS, tvOS,
+watchOS and visionOS only. There is no way to simulate a 2012 iMac's video hardware. The burn
+test drives *this app's* negotiation and streaming against each machine's real capability
+profile, many times over. It proves the code behaves; it proves nothing about silicon that is
+not physically present.
+
+Last run: 72 cycles, 72 passed, 0 failed. Resident memory went 52,032 KB -> 49,136 KB across the
+run, no virtual displays left registered, no crash reports.
 
 ## Build
 

@@ -36,6 +36,11 @@ struct MenuBarView: View {
     var body: some View {
         Text(hub.statusLine)
         Divider()
+        // Live routes, so the state is visible without opening anything.
+        Text("Connection").font(.caption)
+        ForEach(hub.menuRoutes, id: \.self) { Text($0) }
+        Button("Connection status…") { hub.openConnection() }
+        Divider()
         if hub.sending {
             Button("Stop sending") { hub.stopSending() }
         } else {

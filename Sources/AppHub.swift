@@ -14,6 +14,8 @@ final class AppHub: ObservableObject {
     lazy var sender: SenderEngine = SenderEngine(settings: settings, transport: transport)
 
     @Published var screen: Screen = .home
+    /// Drives the connection sheet, from the app or from the menu bar.
+    @Published var showingConnection = false
     /// True while the sender is advertising, whether or not a window is open.
     @Published var sending = false
     /// Start with no window at all — menu bar only.
@@ -58,6 +60,23 @@ final class AppHub: ObservableObject {
             existing.makeKeyAndOrderFront(nil)
         } else {
             NSApp.sendAction(Selector(("newWindowForTab:")), to: nil, from: nil)
+        }
+    }
+
+    /// Opens the connection page, bringing a window back if there is none.
+    func openConnection() {
+        showWindow()
+        showingConnection = true
+    }
+
+    /// One line per route for the menu bar, marking the one in use.
+    var menuRoutes: [String] {
+        let active = transport.selectedID != "auto"
+            ? transport.selectedID
+            : (links.activeInterface ?? links.links.first?.id)
+        return links.links.map { l in
+            (l.id == active ? "● " : "   ") + l.title + " — " + l.speedText
+                + (l.ip.map { " · \($0)" } ?? "")
         }
     }
 

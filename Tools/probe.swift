@@ -3,8 +3,13 @@ import Foundation
 import Network
 
 let host = CommandLine.arguments.count > 1 ? CommandLine.arguments[1] : "127.0.0.1"
+// caps mode: "hevc" (default), "h264" (receiver that cannot do HEVC), "none"
+// (an older build that sends no capabilities at all)
+let capsMode = CommandLine.arguments.count > 2 ? CommandLine.arguments[2] : "hevc"
+let seconds  = CommandLine.arguments.count > 3 ? Double(CommandLine.arguments[3])! : 8.0
 var buffer = Data()
 var frames = 0, bytes = 0, gotFormat = false
+var helloCount = 0, framesAtLastHello = 0
 var hello: String = "(none)"
 let start = Date()
 
@@ -23,8 +28,22 @@ conn.stateUpdateHandler = { st in
     if case .ready = st {
         print("connected to \(host):51777")
         // Announce HEVC support so the sender can pick it and give us 5K.
-        let caps = #"{"codecs":["h264","hevc"],"maxWidth":5120,"maxHeight":2880,"appVersion":"probe"}"#
-        conn.send(content: framed(5, Data(caps.utf8)), completion: .contentProcessed { _ in })
+        // capsMode is either a shorthand, or a full capabilities JSON so a
+        // specific machine's abilities can be impersonated exactly.
+        let caps: String?
+        switch capsMode {
+        case "h264":
+            caps = #"{"codecs":["h264"],"maxWidth":4096,"maxHeight":2304,"appVersion":"probe-h264"}"#
+        case "none":
+            caps = nil
+        case "hevc":
+            caps = #"{"codecs":["h264","hevc"],"maxWidth":5120,"maxHeight":2880,"appVersion":"probe"}"#
+        default:
+            caps = capsMode.hasPrefix("{") ? capsMode : nil
+        }
+        if let caps {
+            conn.send(content: framed(5, Data(caps.utf8)), completion: .contentProcessed { _ in })
+        }
     }
 }
 func pump() {
@@ -37,7 +56,11 @@ func pump() {
             let payload = buffer.subdata(in: (buffer.startIndex+5)..<(buffer.startIndex+4+len))
             buffer.removeSubrange(buffer.startIndex..<(buffer.startIndex+4+len))
             switch type {
-            case 1: hello = String(data: payload, encoding: .utf8) ?? "?"
+            case 1:
+                let h = String(data: payload, encoding: .utf8) ?? "?"
+                if h != hello { print("hello[\(helloCount)]: \(h)"); helloCount += 1 }
+                hello = h
+                framesAtLastHello = frames
             case 2: gotFormat = true; print("format: \(payload.count) bytes of SPS/PPS")
             case 3: frames += 1
             default: break
@@ -49,9 +72,10 @@ func pump() {
 }
 conn.start(queue: .global())
 pump()
-DispatchQueue.global().asyncAfter(deadline: .now() + 8) {
+DispatchQueue.global().asyncAfter(deadline: .now() + seconds) {
     let secs = Date().timeIntervalSince(start)
     print("hello: \(hello)")
+    print("frames after the last hello: \(frames - framesAtLastHello)")
     print("format received: \(gotFormat)")
     print("frames: \(frames) in \(String(format: "%.1f", secs))s  (\(String(format: "%.1f", Double(frames)/secs)) fps)")
     print("bytes: \(bytes) (\(String(format: "%.1f", Double(bytes)*8/secs/1_000_000)) Mbps)")

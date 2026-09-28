@@ -112,11 +112,18 @@ struct RootView: View {
         }
         .frame(minWidth: 720, minHeight: 540)
         .phoenixBackground()
+        .sheet(isPresented: $hub.showingConnection) {
+            ConnectionView(links: hub.links, transport: hub.transport,
+                           settings: hub.settings, engine: hub.sender) {
+                hub.showingConnection = false
+            }
+        }
     }
 }
 
 struct HomeView: View {
     @Binding var screen: Screen
+    @EnvironmentObject var hub: AppHub
 
     var body: some View {
         VStack(spacing: 22) {
@@ -144,6 +151,13 @@ struct HomeView: View {
                 }.buttonStyle(.plain)
             }
             .frame(maxWidth: 520)
+
+            Button { hub.openConnection() } label: {
+                Label("Connection status", systemImage: "antenna.radiowaves.left.and.right")
+                    .font(.system(size: 12))
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.secondary)
 
             Spacer(minLength: 10)
         }
